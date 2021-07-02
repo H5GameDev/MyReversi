@@ -1,0 +1,412 @@
+<html>
+
+<head>
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+		integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+	<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+		integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+		crossorigin="anonymous"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
+		integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+		crossorigin="anonymous"></script>
+	<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+		integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+		crossorigin="anonymous"></script>
+	<script src="https://code.jquery.com/jquery-3.5.1.min.js"
+		integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin="anonymous"></script>
+	<script src="./js/jquery.rollNumber.js"></script>
+	<script src="./js/main.js"></script>
+	<link rel="stylesheet" href="css/common.css">
+	<link rel="stylesheet" href="css/main.css">
+	<style>
+		canvas {
+			background-color: darkgreen;
+			align-content: center;
+		}
+
+		h4 {
+			color: blueviolet;
+			align-content: left;
+		}
+
+		img {
+			max-height: 75px;
+		}
+
+		.top-buffer {
+			margin-top: 20px;
+		}
+	</style>
+	<!-- 
+	Images:
+		Reversi-WFB/frame_00001~7.png 
+		White:./Reversi-WFB/frame_00001.png 
+		Black:./Reversi-WFB/frame_00007.png
+	Audio:
+		Place:	./reversi_sound_effect_place.wav
+		Flip:	./reversi_sound_effect_flip.wav
+	-->
+	<script>
+		var bwidth = 0;
+		var bheight = 0;
+		function drawBoard() {
+			var c = document.getElementById("boardCanvas");
+			var ctx = c.getContext("2d");
+			bwidth = c.width;
+			bheight = c.height;
+			ctx.lineWidth = 3;
+			for (var i = 0; i < 8; i++) {
+				//Horizontal
+				ctx.beginPath();
+				ctx.moveTo(0, bheight / 8 * i);
+				ctx.lineTo(bwidth, bheight / 8 * i);
+				ctx.stroke();
+
+				ctx.beginPath();
+				ctx.moveTo(bwidth / 8 * i, 0);
+				ctx.lineTo(bwidth / 8 * i, bheight);
+				ctx.stroke();
+			}
+		}
+		function drawChess() {
+
+		}
+		function initBoard() {
+			var c = document.getElementById("boardCanvas");
+			var ctx = c.getContext("2d");
+			ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+			drawBoard();
+			c.addEventListener('mousedown', function (e) {
+				var x;
+				var y;
+				if (e.pageX || e.pageY) {
+					x = e.pageX;
+					y = e.pageY;
+				}
+				else {
+					x = e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
+					y = e.clientY + document.body.scrollTop + document.documentElement.scrollTop;
+				}
+				x -= c.offsetLeft;
+				y -= c.offsetTop;
+
+				var gridX = Math.floor(x / (bwidth / 8));
+				var gridY = Math.floor(y / (bwidth / 8));
+				boardClicked(gridX, gridY);
+
+			})
+		}
+		function chessFlip(cX, cY, initSide) {
+			var imgNumber;
+			var lastImgNumber;
+			var timer;
+			var img = new Image;
+			var c = document.getElementById("boardCanvas");
+			var ctx = c.getContext("2d");
+			new Audio("./reversi_sound_effect_flip.wav").play();
+			switch (initSide) {
+				case 0:
+					imgNumber = 1;
+					lastImgNumber = 7;
+					boardArray[cX][cY] = 1;
+					img.onload = function () {
+						ctx.clearRect(bwidth / 8 * cX, bwidth / 8 * cY, bwidth / 8, bwidth / 8);
+						ctx.drawImage(img, 0, 0, 512, 512, bwidth / 8 * cX, bwidth / 8 * cY, bwidth / 8, bwidth / 8);
+						drawBoard();
+					};
+					timer = setInterval(function () {
+						if (imgNumber > lastImgNumber) {
+							clearInterval(timer); chessPlace(cX, cY, boardArray[cX][cY]);
+						} else {
+							img.src = "./Reversi-WFB/frame_0000" + (imgNumber++) + ".png";
+
+						}
+					}, 1000 / 12); //12 fps
+
+					break;
+				case 1:
+					imgNumber = 7;
+					lastImgNumber = 1;
+					boardArray[cX][cY] = 0;
+					img.onload = function () {
+						ctx.clearRect(bwidth / 8 * cX, bwidth / 8 * cY, bwidth / 8, bwidth / 8);
+						ctx.drawImage(img, 0, 0, 512, 512, bwidth / 8 * cX, bwidth / 8 * cY, bwidth / 8, bwidth / 8);
+						drawBoard();
+					};
+					timer = setInterval(function () {
+						if (imgNumber < lastImgNumber) {
+							clearInterval(timer); chessPlace(cX, cY, boardArray[cX][cY]);
+						} else {
+							img.src = "./Reversi-WFB/frame_0000" + (imgNumber--) + ".png";
+						}
+					}, 1000 / 12); //12 fps
+
+					break;
+			}
+		}
+		function chessClear(cX, cY) {
+			var c = document.getElementById("boardCanvas");
+			var ctx = c.getContext("2d");
+			var img = new Image;
+			ctx.clearRect(bwidth / 8 * cX, bwidth / 8 * cY, bwidth / 8, bwidth / 8);
+			boardArray[cX][cY] = -1;
+		}
+		function chessPlace(cX, cY, side) {
+			var c = document.getElementById("boardCanvas");
+			var ctx = c.getContext("2d");
+			var img = new Image;
+			new Audio("./reversi_sound_effect_place.wav").play();
+
+			img.onload = function () {
+				ctx.drawImage(img, 0, 0, 512, 512, bwidth / 8 * cX, bwidth / 8 * cY, bwidth / 8, bwidth / 8);
+			};
+			if (side != 0)
+				img.src = "./Reversi-WFB/frame_00001.png";
+			else
+				img.src = "./Reversi-WFB/frame_00007.png";
+			boardArray[cX][cY] = side;
+			drawBoard();
+		}
+		function boardClicked(cX, cY) {
+
+			if (boardArray[cX][cY] == -1) {
+				chessPlace(cX, cY, mySide);
+
+			}
+			play(cX, cY);
+			drawBoard();
+		}
+		var opSide = 1;
+		var mySide = 0;
+		var boardArray = new Array(8);
+		for (var i = 0; i < boardArray.length; i++) {
+			boardArray[i] = new Array(8);
+			for (var j = 0; j < boardArray[i].length; j++) {
+				boardArray[i][j] = -1;
+			}
+		}
+	</script>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+
+<body style=" vertical-align:baseline">
+
+
+
+	<div class="container text-center align-items-center">
+		<div class="row ">
+			<div class="col">
+				<legend class="text-center top-buffer">
+					Reversi
+				</legend>
+			</div>
+			<div class="col">
+				<legend id="roomIdTextview" class="text-center top-buffer">
+					<div class="input-group mb-3">
+						<div class="input-group-prepend">
+							<span class="input-group-text">Room ID</span>
+						</div>
+						<input id="roomidTextview" type="text" class="form-control" aria-label="Join Group">
+						<div class="input-group-append">
+							<button id="joinRoomButton" class="btn btn-outline-secondary" type="button">Join</button>
+							<button id="readyRoomButton" class="btn btn-outline-secondary" type="button">Ready</button>
+						</div>
+					</div>
+				</legend>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col">
+				<div class="card">
+					<div class="card-body">
+						<div class="container">
+							<div class="row">
+								<div class="col">
+									<!-- Opponent side  -->
+									<div class="col">
+										<h4> Opponent </h4>
+										<img id="opChessSide" src="./Reversi-WFB/frame_00007.png"
+											class="rounded float-left img-fluid img-thumbnail" />
+									</div>
+								</div>
+								<div class="col">
+									<div id="opChessCount" class="number-normal">
+										<div class="data">000</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="col ">
+				<div class="card">
+					<div class="card-body">
+						<div class="container">
+							<div class="row">
+								<div class="col">
+									<!-- Ur side  -->
+									<div class="col">
+										<h4> You </h4>
+										<img id="urChessSide" src="./Reversi-WFB/frame_00001.png"
+											class="rounded float-left img-fluid img-thumbnail" />
+									</div>
+								</div>
+								<div class="col">
+
+									<div id="urChessCount" class="number-normal">
+										<div class="data">000</div>
+									</div>
+
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col">
+
+			</div>
+		</div>
+	</div>
+	<div class="top-buffer text-center">
+		<canvas id="boardCanvas"></canvas>
+	</div>
+	<script>
+		function min(a,b){
+			if(a<b)return a;
+			return b;
+		}
+		var pWidth = .7;
+		$(window).resize(function () {
+			var canvas = document.getElementById('boardCanvas');
+			var context = canvas.getContext('2d');
+			context.canvas.width = pWidth * min(window.innerWidth,window.innerHeight);
+			context.canvas.height = pWidth * min(window.innerWidth,window.innerHeight);
+			canvas.width = pWidth * min(window.innerWidth,window.innerHeight);
+			canvas.height = pWidth * min(window.innerWidth,window.innerHeight);
+			initBoard();
+		});
+		var canvas = document.getElementById('boardCanvas');
+		var context = canvas.getContext('2d');
+		context.canvas.width = pWidth * min(window.innerWidth,window.innerHeight);
+		context.canvas.height = pWidth * min(window.innerWidth,window.innerHeight);
+		canvas.width = pWidth * min(window.innerWidth,window.innerHeight);
+		canvas.height = pWidth * min(window.innerWidth,window.innerHeight);
+		initBoard();
+		$('#urChessCount').rollNumber({
+			number: 3456,   //必需：显示数据
+			fontStyle: {      //可选：数字字体样式
+				'font-size': 56,    //可选：默认14
+				'font-family': 'LetsgoDigital'
+			}
+		});
+		$('#opChessCount').rollNumber({
+			number: 1236,   //必需：显示数据
+			fontStyle: {      //可选：数字字体样式
+				'font-size': 56,   //可选：默认14
+				'font-family': 'LetsgoDigital'
+			}
+		});
+		var urCount = 0;
+		var opCount = 0;
+
+		var int = self.setInterval("TimerEvent()", 1000);
+		function refreshBoard() {
+			for (var i = 0; i < 8; i++) {
+				for (var j = 0; j < 8; j++) {
+					if (boardArray[j][i] != Board[j][i] && Board[j][i] != -1 && boardArray[j][i] != -1) {
+						chessFlip(j, i, boardArray[j][i]);
+					} else if (boardArray[j][i] == -1 && boardArray[j][i] != Board[j][i]) {
+						chessPlace(j, i, Board[j][i]);
+					} else if (boardArray[j][i] != Board[j][i] && Board[j][i] == -1) {
+						chessClear(j, i);
+					}
+				}
+			}
+		}
+		function TimerEvent() {
+			gs();
+			refreshBoard();
+			if (mySide == currentSide) {
+				$('#urChessSide').css('border','5px solid red');
+				$('#opChessSide').css('border','0px solid red');
+			} else {
+				$('#opChessSide').css('border','5px solid red');
+				$('#urChessSide').css('border','0px solid red');
+			}
+			{
+				if (mySide == 0) {
+					if (urCount != bCount) {
+						$('#urChessCount').rollNumber({
+							number: bCount,   //必需：显示数据
+							fontStyle: {      //可选：数字字体样式
+								'font-size': 56,    //可选：默认14
+								'font-family': 'LetsgoDigital'
+							}
+						});
+						urCount = bCount;
+					}
+					if (opCount != wCount) {
+						$('#opChessCount').rollNumber({
+							number: wCount,   //必需：显示数据
+							fontStyle: {      //可选：数字字体样式
+								'font-size': 56,   //可选：默认14
+								'font-family': 'LetsgoDigital'
+							}
+						});
+						opCount = wCount;
+					}
+
+				} else {
+					if (urCount != wCount) {
+						$('#urChessCount').rollNumber({
+							number: wCount,   //必需：显示数据
+							fontStyle: {      //可选：数字字体样式
+								'font-size': 56,    //可选：默认14
+								'font-family': 'LetsgoDigital'
+							}
+						});
+						urCount = wCount;
+					}
+					if (opCount != bCount) {
+						$('#opChessCount').rollNumber({
+							number: bCount,   //必需：显示数据
+							fontStyle: {      //可选：数字字体样式
+								'font-size': 56,   //可选：默认14
+								'font-family': 'LetsgoDigital'
+							}
+						});
+						opCount = bCount;
+					}
+				}
+			}
+
+		}
+		$("#joinRoomButton").click(function () {
+			sid = $("#roomidTextview").val();
+			join();
+		});
+		$("#readyRoomButton").click(function () {
+			sid = $("#roomidTextview").val();
+			ready(function () {
+				if (myside == "BLACK") {
+					mySide = 0;
+					opSide = 1;
+					$("#urChessSide").attr("src", "./Reversi-WFB/frame_00007.png");
+					$("#opChessSide").attr("src", "./Reversi-WFB/frame_00001.png");
+				} else {
+					mySide = 1;
+					opSide = 0;
+					$("#urChessSide").attr("src", "./Reversi-WFB/frame_00001.png");
+					$("#opChessSide").attr("src", "./Reversi-WFB/frame_00007.png");
+				}
+			});
+
+		});
+	</script>
+</body>
+
+</html>
