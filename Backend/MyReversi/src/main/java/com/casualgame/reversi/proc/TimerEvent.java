@@ -13,14 +13,17 @@ import org.springframework.scheduling.quartz.QuartzJobBean;
 
 import com.casualgame.reversi.service.SessionService;
 
-
-public class TimerEvent extends QuartzJobBean{
+public class TimerEvent extends QuartzJobBean {
 	@Autowired
 	private SessionService sessionService;
-	private static final Logger LOG= LoggerFactory.getLogger(TimerEvent.class);
-    @Override
-    protected void executeInternal(JobExecutionContext jobExecutionContext) throws JobExecutionException {
-    	sessionService.expireTick();
-    	sessionService.printStatus();
-    } 
+	private static final Logger LOG = LoggerFactory.getLogger(TimerEvent.class);
+	private static int e = 0;
+
+	@Override
+	protected void executeInternal(JobExecutionContext jobExecutionContext) throws JobExecutionException {
+
+		sessionService.expireTick();
+		if ((e = (e + 1) % 80) == 0)
+			sessionService.printStatus();
+	}
 }
