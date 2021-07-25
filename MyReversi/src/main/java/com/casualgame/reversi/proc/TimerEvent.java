@@ -1,9 +1,6 @@
 
 package com.casualgame.reversi.proc;
 
-import java.text.ParseException;
-import java.util.List;
-
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.slf4j.Logger;
